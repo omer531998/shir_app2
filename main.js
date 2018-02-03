@@ -1,36 +1,9 @@
-var express = require("express");
-var cors = require("cors");
-var bodyParser = require("body-parser");
-var path = require('path');
 var formidable = require('formidable');
 var fs = require('fs');
 var http = require("http");
 
-var app = express();
 
-var inputfiles = [];
-var endpoint;
-
-function getEndpoint(inputEndpoint, parameters){ //TODO
-    var endpoint = inputEndpoint;
-    if(inputEndpoint.includes("create_video")){
-
-
-    }
-}
-
-function setReqOptions(endpoint, inputfile) { //TODO
-    var url = endpoint.substring(0, endpoint.indexOf("create_video")) + "create_video_spec";
-
-    var options = {
-        url: url,
-        method: "POST",
-        body: inputfile
-    };
-    return options;
-}
-
-function get_video_url(file_path) {
+function get_video_url(file_path, end_point) {
     return "http://im_a_url.look.at_me"
 }
 
@@ -38,20 +11,26 @@ http.createServer(function (req, res) {
     if (req.url == '/fileupload') {
         var form = new formidable.IncomingForm();
         form.parse(req, function (err, fields, files) {
-            var file_path = files.filetoupload.path;
+            var file_path = files.file_to_upload.path;
+            var end_point = fields.end_point;
             console.log("File uploaded to path:", file_path);
-            var url = get_video_url();
+            var url = get_video_url(file_path, end_point);
             res.write("video url: ");
             res.write(url);
             res.end();
         });
     } else {
         res.writeHead(200, {'Content-Type': 'text/html'});
-        res.write('<form action="fileupload" method="post" enctype="multipart/form-data">');
-        res.write('<input type="file" name="filetoupload"><br>');
-        res.write('<input type="submit">');
-        res.write('</form>');
-        return res.end();
+        fs.readFile("index.html", function(err, data){
+            if(err){
+                res.statusCode = 500;
+                res.end('Error getting the file: ${err}.');
+            } else {
+                res.write(data);
+                res.end();
+            }
+        });
+
     }
 }).listen(8080);
 
