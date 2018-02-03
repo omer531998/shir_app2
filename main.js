@@ -7,27 +7,10 @@ var path = require("path");
 
 const SERVER_PORT = 8080;
 
-/*
 function get_output_json(file, end_point) {
-    end_point = end_point.replace("create_video_session", "create_video_spec");
-    fs.readFile(file.path, "utf8", function(err, file_data){
-        if(err){
-            console.log("Error opening file: " + file.path);
-        } else {
-            request.post({
-                headers: {'content-type' : 'application/x-www-form-urlencoded'},
-                url:     end_point,
-                body:    file_data
-            }, function(error, response, body){
-                console.log(body);
-                return body;
-            });
-        }
-    });
-}
-*/
-
-function get_output_json(file, end_point) {
+    /*
+    Sends the file to the end_point and returns the json output.
+     */
     end_point = end_point.replace("create_video_session", "create_video_spec");
     var file_data = fs.readFileSync(file.path, function(err, data){
         if(err){
@@ -50,6 +33,10 @@ function get_output_json(file, end_point) {
 }
 
 function getCompressedFilePath(outputs, compressedFolderPath, callback) {
+    /*
+    Compresses outputs to a zip file and dumps named "output.zip" in compressedFolderPath.
+    When finished calls callback with the compressed file path
+     */
     var compressedFilePath = path.join(compressedFolderPath, "output.zip")
     var compressedFile = fs.createWriteStream(compressedFilePath);
     var archive = archiver('zip', {
@@ -108,6 +95,7 @@ function main() {
                                             });
                         var readStream = fs.createReadStream(comrepssedFilePath);
                         readStream.pipe(res);
+                        res.end();
                     });
                 }
                 catch(err) {
