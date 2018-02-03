@@ -37,19 +37,21 @@ function get_output_json(file, end_point) {
         }
     });
 
-    request.post({
+    var a = request.post({
         headers: {'content-type' : 'application/x-www-form-urlencoded'},
         url:     end_point,
         body:    file_data
     }, function(error, response, body){
-        console.log(body);
-        return body;
+        if (error) {
+            throw  error;
+        }
     });
+    return a.body;
 }
 
-function getCompressedFilePath(outputs, compressedFolderPath) {
+function getCompressedFilePath(outputs, compressedFolderPath, callback) {
     var compressedFilePath = path.join(compressedFolderPath, "output.zip")
-    var compressedFile = fs.createWriteStream(path.join(compressedFilePath, "output.zip"));
+    var compressedFile = fs.createWriteStream(compressedFilePath);
     var archive = archiver('zip', {
         zlib: { level: 9 }
     });
@@ -57,13 +59,22 @@ function getCompressedFilePath(outputs, compressedFolderPath) {
     compressedFile.on('close', function() {
         console.log("Compressed: " + archive.pointer() + ' total bytes');
         console.log('Finished compression');
-        return compressedFilePath
+        callback(compressedFilePath);
     });
 
+    archive.on('warning', function(err) {
+        if (err.code === 'ENOENT') {
+            console.log(err);
+        } else {
+            console.log(err);
+            throw err;
+        }
+    });
     archive.on('error', function(err) {
         throw err;
     });
 
+    archive.pipe(compressedFile);
     outputs.forEach(function (output) {
         archive.append(output[1], { name: output[0] });
     });
@@ -80,17 +91,27 @@ function main() {
                 var input_files = form_files.files_to_upload;
                 var end_point = fields.end_point;
                 var outputs = input_files.map(function(input_file) {
-                    var j = get_output_json(input_file, end_point);
+                    try {
+                        var j = get_output_json(input_file, end_point);
+                    }
+                    catch(err) {
+                        res.write(err);
+                        res.end();
+                    }
                     console.log(j);
                     return [input_file.name,  j];
                 });
                 try {
-                    res.sendFile(getCompressedFilePath(outputs, form.uploadDir));
+                    getCompressedFilePath(outputs, form.uploadDir, function (comrepssedFile) {
+                        res.writeHead(200, {'Content-Type': 'application/octet-stream'});
+                        res.sendFile(comrepssedFile);
+                            res.end();
+                    });
                 }
                 catch(err) {
                     res.write(err);
+                    res.end();
                 }
-                res.end();
             });
         } else {
             res.writeHead(200, {'Content-Type': 'text/html'});
