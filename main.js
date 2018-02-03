@@ -75,6 +75,7 @@ function main() {
             var form = new formidable.IncomingForm();
             form.multiples = true;
             form.parse(req, function (err, fields, form_files) {
+                // TODO: Check if inputs exist
                 var input_files = form_files.files_to_upload;
                 var end_point = fields.end_point;
                 var outputs = input_files.map(function(input_file) {
