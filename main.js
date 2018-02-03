@@ -7,7 +7,7 @@ const SERVER_PORT = 8080;
 
 function get_output_file(file, end_point) {
     end_point = end_point.replace("create_video_session", "create_video_spec");
-    var file_data = fs.readFile(file.path, function(err, data){
+    var file_data = fs.readFileSync(file.path, function(err, data){
         if(err){
             console.log("Error opening file: " + file.path);
         } else {
@@ -21,8 +21,8 @@ function get_output_file(file, end_point) {
         body:    file_data
     }, function(error, response, body){
         console.log(body);
+        return body;
     });
-    return body;
 }
 
 
