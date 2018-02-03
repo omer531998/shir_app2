@@ -102,10 +102,12 @@ function main() {
                     return [input_file.name,  j];
                 });
                 try {
-                    getCompressedFilePath(outputs, form.uploadDir, function (comrepssedFile) {
-                        res.writeHead(200, {'Content-Type': 'application/octet-stream'});
-                        res.sendFile(comrepssedFile);
-                            res.end();
+                    getCompressedFilePath(outputs, form.uploadDir, function (comrepssedFilePath) {
+                        res.writeHead(200, {'Content-Type': 'application/octet-stream',
+                                            "Content-Disposition" : "inline; filename=output.zip"
+                                            });
+                        var readStream = fs.createReadStream(comrepssedFilePath);
+                        readStream.pipe(res);
                     });
                 }
                 catch(err) {
