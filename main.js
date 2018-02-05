@@ -96,7 +96,6 @@ function main() {
                                             });
                         var readStream = fs.createReadStream(comrepssedFilePath);
                         readStream.pipe(res);
-                        res.end();
                     });
                 }
                 catch(err) {
