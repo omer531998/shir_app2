@@ -69,49 +69,77 @@ function getCompressedFilePath(outputs, compressedFolderPath, callback) {
 
 function main() {
     http.createServer(function (req, res) {
-        if (req.url === '/file_upload') {
-            var form = new formidable.IncomingForm();
-            form.multiples = true;
-            form.parse(req, function (err, fields, form_files) {
-                // TODO: Check if inputs exist
-                var input_files = form_files.files_to_upload;
-                var end_point = fields.end_point;
-                var outputs = input_files.map(function(input_file) {
+        try {
+            if (req.url === '/file_upload') {
+                var form = new formidable.IncomingForm();
+                form.multiples = true;
+                form.parse(req, function (err, fields, form_files) {
+                    // TODO: Check if inputs exist
                     try {
-                        var j = get_output_json(input_file, end_point);
+                        var input_files = form_files.files_to_upload;
+                        if (!(input_files instanceof Array)) {
+                            input_files = [input_files];
+                        }
+                        var end_point = fields.end_point;
+                        if (!input_files || !end_point){
+                            console.log("Not all inputs given\n");
+                            res.write("Not all inputs given");
+                            res.end();
+                            return;
+                        }
+                        var had_error = false;
+                        var outputs = input_files.map(function (input_file) {
+                            try {
+                                var j = get_output_json(input_file, end_point);
+                            }
+                            catch (err) {
+                                res.write(err.toString());
+                                had_error = true;
+                            }
+                            console.log(j);
+                            return [input_file.name, j];
+                        });
+                        if (had_error) {
+                            res.end();
+                            return;
+                        }
+                        getCompressedFilePath(outputs, form.uploadDir, function (comrepssedFilePath) {
+                            try {
+                                res.writeHead(200, {
+                                    'Content-Type': 'application/octet-stream',
+                                    "Content-Disposition": "inline; filename=output.zip"
+                                });
+                                var readStream = fs.createReadStream(comrepssedFilePath);
+                                readStream.pipe(res);
+                            }
+                            catch (err) {
+                                res.write(err.toString());
+                                res.end();
+
+                            }
+                        });
                     }
                     catch(err) {
-                        res.write(err);
+                        res.write(err.toString());
                         res.end();
                     }
-                    console.log(j);
-                    return [input_file.name,  j];
                 });
-                try {
-                    getCompressedFilePath(outputs, form.uploadDir, function (comrepssedFilePath) {
-                        res.writeHead(200, {'Content-Type': 'application/octet-stream',
-                                            "Content-Disposition" : "inline; filename=output.zip"
-                                            });
-                        var readStream = fs.createReadStream(comrepssedFilePath);
-                        readStream.pipe(res);
-                    });
-                }
-                catch(err) {
-                    res.write(err);
-                    res.end();
-                }
-            });
-        } else {
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            fs.readFile("index.html", function(err, data){
-                if(err){
-                    res.statusCode = 500;
-                    res.end('Error getting the file: ' + err);
-                } else {
-                    res.write(data);
-                    res.end();
-                }
-            });
+            } else {
+                res.writeHead(200, {'Content-Type': 'text/html'});
+                fs.readFile("index.html", function(err, data){
+                    if(err){
+                        res.statusCode = 500;
+                        res.end('Error getting the file: ' + err);
+                    } else {
+                        res.write(data);
+                        res.end();
+                    }
+                });
+            }
+        }
+        catch (err) {
+            res.write(err);
+            res.end()
         }
     }).listen(SERVER_PORT);
 
