@@ -1,9 +1,10 @@
 var formidable = require('formidable');
 var fs = require('fs');
 var http = require("http");
-var request = require("request");
+//var request = require("request");
 var archiver = require('archiver');
 var path = require("path");
+var request = require('sync-request');
 
 const SERVER_PORT = 8080;
 
@@ -20,16 +21,13 @@ function get_output_json(file, end_point) {
         }
     });
 
-    var a = request.post({
+    var res = request('POST', end_point, {
         headers: {'content-type' : 'application/x-www-form-urlencoded'},
         url:     end_point,
         body:    file_data
-    }, function(error, response, body){
-        if (error) {
-            throw  error;
-        }
     });
-    return a.body;
+
+    return res.getBody("utf-8");
 }
 
 function getCompressedFilePath(outputs, compressedFolderPath, callback) {
